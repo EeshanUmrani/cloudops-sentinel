@@ -199,16 +199,6 @@ Built-in sample incidents:
 
 ---
 
-## Limitations
-
-- No live AWS integrations yet
-- No automatic remediation
-- No persistent storage
-- Regex-based guardrails can produce false positives
-- Current workflow is sequential
-
----
-
 ## Future Work
 
 - Add AWS CloudWatch/SQS/RDS integrations
