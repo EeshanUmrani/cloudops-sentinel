@@ -1,8 +1,8 @@
-from typing import TypedDict, List, Dict, Any
-from langchain_core.messages import SystemMessage, HumanMessage
+from typing import Any, Dict, List, TypedDict
+from langchain_core.messages import HumanMessage, SystemMessage
 
-from src.llm import get_llm
 from src.guardrails import run_input_guardrails, run_output_guardrails
+from src.llm import get_llm
 
 
 class IncidentState(TypedDict, total=False):
@@ -25,19 +25,36 @@ class IncidentState(TypedDict, total=False):
 
 def add_trace(state: IncidentState, agent_name: str, summary: str) -> List[Dict[str, str]]:
     trace = list(state.get("agent_trace", []))
-    trace.append({
-        "agent": agent_name,
-        "summary": summary,
-    })
+    trace.append(
+        {
+            "agent": agent_name,
+            "summary": summary,
+        }
+    )
     return trace
 
 
-def call_agent(system_prompt: str, user_prompt: str) -> str:
-    llm = get_llm()
-    response = llm.invoke([
-        SystemMessage(content=system_prompt),
-        HumanMessage(content=user_prompt),
-    ])
+def call_agent(system_prompt: str, user_prompt: str, model_tier: str = "fast") -> str:
+    """
+    Calls the configured LLM for a given model tier.
+
+    fast:
+        Used for structured, lower-complexity tasks such as planning,
+        log extraction, metrics analysis, remediation drafting, and reporting.
+
+    smart:
+        Used for reasoning-heavy tasks such as root cause analysis and critique.
+    """
+
+    llm = get_llm(model_tier=model_tier)
+
+    response = llm.invoke(
+        [
+            SystemMessage(content=system_prompt),
+            HumanMessage(content=user_prompt),
+        ]
+    )
+
     return response.content
 
 
@@ -61,7 +78,7 @@ def security_agent(state: IncidentState) -> IncidentState:
         "agent_trace": add_trace(
             state,
             "Security Agent",
-            f"Input guardrails completed: {', '.join(summary_parts)}."
+            f"Input guardrails completed using deterministic checks: {', '.join(summary_parts)}.",
         ),
     }
 
@@ -87,14 +104,18 @@ Incident:
 {incident}
 """
 
-    result = call_agent(system_prompt, user_prompt)
+    result = call_agent(
+        system_prompt=system_prompt,
+        user_prompt=user_prompt,
+        model_tier="fast",
+    )
 
     return {
         "triage_plan": result,
         "agent_trace": add_trace(
             state,
             "Planner Agent",
-            "Created a structured investigation plan."
+            "Created a structured investigation plan using the fast model.",
         ),
     }
 
@@ -127,14 +148,18 @@ Incident:
 {incident}
 """
 
-    result = call_agent(system_prompt, user_prompt)
+    result = call_agent(
+        system_prompt=system_prompt,
+        user_prompt=user_prompt,
+        model_tier="fast",
+    )
 
     return {
         "log_analysis": result,
         "agent_trace": add_trace(
             state,
             "Log Analyst Agent",
-            "Analyzed operational logs and extracted key error patterns."
+            "Analyzed operational logs and extracted key error patterns using the fast model.",
         ),
     }
 
@@ -167,14 +192,18 @@ Incident:
 {incident}
 """
 
-    result = call_agent(system_prompt, user_prompt)
+    result = call_agent(
+        system_prompt=system_prompt,
+        user_prompt=user_prompt,
+        model_tier="fast",
+    )
 
     return {
         "metrics_analysis": result,
         "agent_trace": add_trace(
             state,
             "Metrics Analyst Agent",
-            "Analyzed incident metrics and estimated severity."
+            "Analyzed incident metrics and estimated severity using the fast model.",
         ),
     }
 
@@ -210,14 +239,18 @@ Metrics analysis:
 {metrics_analysis}
 """
 
-    result = call_agent(system_prompt, user_prompt)
+    result = call_agent(
+        system_prompt=system_prompt,
+        user_prompt=user_prompt,
+        model_tier="smart",
+    )
 
     return {
         "root_cause_analysis": result,
         "agent_trace": add_trace(
             state,
             "Root Cause Agent",
-            "Generated ranked root cause hypotheses from logs and metrics."
+            "Generated ranked root cause hypotheses using the smart reasoning model.",
         ),
     }
 
@@ -251,14 +284,18 @@ Root cause analysis:
 {root_cause}
 """
 
-    result = call_agent(system_prompt, user_prompt)
+    result = call_agent(
+        system_prompt=system_prompt,
+        user_prompt=user_prompt,
+        model_tier="fast",
+    )
 
     return {
         "remediation_plan": result,
         "agent_trace": add_trace(
             state,
             "Remediation Agent",
-            "Produced safe diagnostic actions and human-approval remediation steps."
+            "Produced safe diagnostic actions and human-approval remediation steps using the fast model.",
         ),
     }
 
@@ -291,14 +328,18 @@ Remediation plan:
 {remediation}
 """
 
-    result = call_agent(system_prompt, user_prompt)
+    result = call_agent(
+        system_prompt=system_prompt,
+        user_prompt=user_prompt,
+        model_tier="smart",
+    )
 
     return {
         "critic_review": result,
         "agent_trace": add_trace(
             state,
             "Critic Agent",
-            "Reviewed the reasoning for unsupported claims and overconfidence."
+            "Reviewed the reasoning for unsupported claims and overconfidence using the smart reasoning model.",
         ),
     }
 
@@ -322,7 +363,7 @@ Critic review:
         "agent_trace": add_trace(
             state,
             "Safety Agent",
-            "Ran final output guardrails for secrets and dangerous actions."
+            "Ran final output guardrails using deterministic safety checks.",
         ),
     }
 
@@ -348,6 +389,9 @@ Your job:
 - Do not expose secrets.
 - Do not say that any production-impacting action will be automatically executed.
 - Clearly separate safe diagnostic actions from actions requiring human approval.
+- Only mention [REDACTED_SECRET] if the sanitized incident or security findings actually contain that placeholder.
+- If [REDACTED_SECRET] is not present, do not mention secret redaction in the final report.
+- If a Critic Agent review recommends lowering confidence or preserving uncertainty, reflect that in the final report.
 
 Use this structure:
 1. Executive Summary
@@ -360,7 +404,12 @@ Use this structure:
 8. Safety and Guardrail Notes
 """
 
+    redaction_present = "[REDACTED_SECRET]" in incident or "[REDACTED_SECRET]" in str(security)
+
     user_prompt = f"""
+Redaction present:
+{redaction_present}
+
 Sanitized incident:
 {incident}
 
@@ -389,13 +438,17 @@ Safety review:
 {safety}
 """
 
-    result = call_agent(system_prompt, user_prompt)
+    result = call_agent(
+        system_prompt=system_prompt,
+        user_prompt=user_prompt,
+        model_tier="fast",
+    )
 
     return {
         "final_report": result,
         "agent_trace": add_trace(
             state,
             "Report Agent",
-            "Generated the final incident triage report."
+            "Generated the final incident triage report using the fast model.",
         ),
     }
