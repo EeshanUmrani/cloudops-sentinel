@@ -31,7 +31,7 @@ The system uses a sequential LangGraph workflow with shared state.
 
 <p align="center">
   <em>Figure: High-level architecture of CloudOps Sentinel showing agent orchestration, guardrails, shared state, and LLM interactions.</em>
-</p>s
+</p>
 
 The workflow is intentionally sequential to keep incident triage predictable, auditable, and safe.
 
