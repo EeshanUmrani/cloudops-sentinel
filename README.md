@@ -25,35 +25,13 @@ The system does not execute production actions. It only analyzes incidents and r
 
 The system uses a sequential LangGraph workflow with shared state.
 
-```text
-User
-  ↓
-Streamlit UI
-  ↓
-LangGraph Orchestrator
-  ↓
-Shared Incident State
-  ↓
-Security Agent
-  ↓
-Planner Agent
-  ↓
-Log Analyst Agent
-  ↓
-Metrics Analyst Agent
-  ↓
-Root Cause Agent
-  ↓
-Remediation Agent
-  ↓
-Critic Agent
-  ↓
-Safety Agent
-  ↓
-Report Agent
-  ↓
-Final Incident Report
-```
+<p align="center">
+  <img src="Architecture Diagram.png" alt="CloudOps Sentinel Architecture" width="1000"/>
+</p>
+
+<p align="center">
+  <em>Figure: High-level architecture of CloudOps Sentinel showing agent orchestration, guardrails, shared state, and LLM interactions.</em>
+</p>s
 
 The workflow is intentionally sequential to keep incident triage predictable, auditable, and safe.
 
@@ -201,9 +179,35 @@ Built-in sample incidents:
 
 ## Future Work
 
-- Add AWS CloudWatch/SQS/RDS integrations
-- Parallelize log and metric analysis
-- Add conditional routing in LangGraph
-- Add confidence scoring
-- Improve safety detection
-- Add downloadable incident reports
+The current implementation is a prototype designed to demonstrate multi-agent collaboration, guardrails, and explainable incident reasoning. Future improvements include:
+
+### Observability Integrations
+- Real ingestion from AWS CloudWatch Logs and CloudWatch Metrics
+- Support for OpenTelemetry traces
+- Integration with Datadog, Splunk, and similar monitoring systems
+- Structured incident schema normalization
+
+### Agent and Workflow Improvements
+- Conditional routing in LangGraph
+- Specialized agents for database, authentication, queue, and security incidents
+- Confidence scoring and evidence ranking
+- Escalation and feedback-loop agents
+
+### Safety and Reliability
+- Stronger policy enforcement and guardrails
+- Human approval workflows for high-risk actions
+- Persistent audit logging
+- Authentication and role-based access control
+- Rate limiting and abuse prevention
+
+### Collaboration and Integrations
+- Slack and PagerDuty integrations
+- Jira or ServiceNow ticket creation
+- Notification and escalation workflows
+
+### Evaluation and Production Readiness
+- Automated regression testing
+- Golden incident datasets
+- Human SRE review benchmarks
+- Hallucination tracking and safety scoring
+- Latency and cost monitoring
