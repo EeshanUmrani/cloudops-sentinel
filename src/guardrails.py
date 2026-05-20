@@ -28,15 +28,15 @@ SECRET_PATTERNS = [
 ]
 
 DANGEROUS_ACTION_PATTERNS = [
-    r"delete .* database",
-    r"drop table",
-    r"terminate .* instance",
-    r"disable .* security group",
-    r"delete .* logs",
-    r"purge .* queue",
-    r"rollback automatically",
-    r"restart .* production .* automatically",
-    r"rotate .* production .* secrets .* automatically",
+    r"delete\s+.*database",
+    r"drop\s+table",
+    r"terminate\s+.*instance",
+    r"disable\s+.*security\s+group",
+    r"delete\s+.*logs",
+    r"purge\s+.*queue",
+    r"rollback\s+automatically",
+    r"restart\s+.*production.*automatically",
+    r"rotate\s+.*production.*secrets.*automatically",
 ]
 
 

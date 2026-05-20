@@ -36,6 +36,8 @@ dist/
 
 # Temporary local test scripts
 test_*.py
+pytest.ini
+
 # Elastic Beanstalk Files
 .elasticbeanstalk/*
 !.elasticbeanstalk/*.cfg.yml
